@@ -43,7 +43,7 @@ class Evaluate(object):
         self.model.load_state_dict(checkpoint["model_dict"])
 
     def print_original_predicted(self, decoded_sents, ref_sents, article_sents,
-                                 loadfile):
+                                 loadfile, rouge_res):
         filename = "test_" + loadfile.split(".")[0] + ".txt"
 
         with open(os.path.join("data", filename), "w") as f:
@@ -51,6 +51,7 @@ class Evaluate(object):
                 f.write("article: " + article_sents[i] + "\n")
                 f.write("ref: " + ref_sents[i] + "\n")
                 f.write("dec: " + decoded_sents[i] + "\n\n")
+            f.write("rouge:", rouge_res + "\n")
 
     def evaluate_batch(self, article):
 
@@ -94,16 +95,17 @@ class Evaluate(object):
 
         load_file = self.opt.load_model
 
-        if article:
-            self.print_original_predicted(decoded_sents, ref_sents,
-                                          article_sents, load_file)
+
 
         scores = rouge.get_scores(decoded_sents, ref_sents)
-        rouge_1 = sum([x["rouge-1"]["f"] for x in scores]) / len(scores)
-        rouge_2 = sum([x["rouge-2"]["f"] for x in scores]) / len(scores)
-        rouge_l = sum([x["rouge-l"]["f"] for x in scores]) / len(scores)
+        rouge_1 = sum([x["rouge-1"]["p"] for x in scores]) / len(scores)
+        rouge_2 = sum([x["rouge-2"]["p"] for x in scores]) / len(scores)
+        rouge_l = sum([x["rouge-l"]["p"] for x in scores]) / len(scores)
+        rouge_res = load_file + " rouge_1:" + "%.4f" % rouge_1 + " rouge_2:" + "%.4f" % rouge_2 + " rouge_l:" + "%.4f" % rouge_l
         logger.info(load_file + " rouge_1:" + "%.4f" % rouge_1 + " rouge_2:" + "%.4f" % rouge_2 + " rouge_l:" + "%.4f" % rouge_l)
-
+        if article:
+            self.print_original_predicted(decoded_sents, ref_sents,
+                                          article_sents, load_file, rouge_res)
 
 class Demo(Evaluate):
     def __init__(self, opt):
